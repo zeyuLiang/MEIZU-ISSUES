@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require "digest/md5"
+require "fileutils"
 
 class Attachment < ActiveRecord::Base
   belongs_to :container, :polymorphic => true
@@ -107,9 +108,9 @@ class Attachment < ActiveRecord::Base
 
   def filename=(arg)
     write_attribute :filename, sanitize_filename(arg.to_s)
-    if new_record? && disk_filename.blank?
-      self.disk_filename = Attachment.disk_filename(filename)
-    end
+ #   if new_record? && disk_filename.blank?
+   #   self.disk_filename = Attachment.disk_filename(filename)
+  #  end
     filename
   end
 
@@ -117,7 +118,13 @@ class Attachment < ActiveRecord::Base
   # and computes its MD5 hash
   def files_to_final_location
     if @temp_file && (@temp_file.size > 0)
+      self.disk_directory = target_directory
+      self.disk_filename = Attachment.disk_filename(filename, disk_directory)
       logger.info("Saving attachment '#{self.diskfile}' (#{@temp_file.size} bytes)")
+      path = File.dirname(diskfile)
+      unless File.directory?(path)
+        FileUtils.mkdir_p(path)
+      end
       md5 = Digest::MD5.new
       File.open(diskfile, "wb") do |f|
         if @temp_file.respond_to?(:read)
@@ -149,7 +156,7 @@ class Attachment < ActiveRecord::Base
 
   # Returns file's location on disk
   def diskfile
-    File.join(self.class.storage_path, disk_filename.to_s)
+    File.join(self.class.storage_path, disk_directory.to_s, disk_filename.to_s)
   end
 
   def title
@@ -284,6 +291,25 @@ class Attachment < ActiveRecord::Base
     end
   end
 
+# Moves an existing attachment to its target directory
+  def move_to_target_directory!
+    if !new_record? & readable?
+      src = diskfile
+      self.disk_directory = target_directory
+      dest = diskfile
+      if src != dest && FileUtils.mkdir_p(File.dirname(dest)) && FileUtils.mv(src, dest)
+        update_column :disk_directory, disk_directory
+      end
+    end
+  end
+
+  # Moves existing attachments that are stored at the root of the files
+  # directory (ie. created before Redmine 2.3) to their target subdirectories
+  def self.move_from_root_to_target_directory
+    Attachment.where("disk_directory IS NULL OR disk_directory = ''").find_each do |attachment|
+      attachment.move_to_target_directory!
+    end
+  end
   private
 
   # Physically deletes the file from the file system
@@ -301,8 +327,15 @@ class Attachment < ActiveRecord::Base
     @filename = just_filename.gsub(/[\/\?\%\*\:\|\"\'<>]+/, '_')
   end
 
-  # Returns an ASCII or hashed filename
-  def self.disk_filename(filename)
+  # Returns the subdirectory in which the attachment will be saved
+  def target_directory
+    time = created_on || DateTime.now
+    time.strftime("%Y/%m")
+  end
+
+  # Returns an ASCII or hashed filename that do not
+  # exists yet in the given subdirectory
+  def self.disk_filename(filename, directory=nil)
     timestamp = DateTime.now.strftime("%y%m%d%H%M%S")
     ascii = ''
     if filename =~ %r{^[a-zA-Z0-9_\.\-]*$}
@@ -312,7 +345,7 @@ class Attachment < ActiveRecord::Base
       # keep the extension if any
       ascii << $1 if filename =~ %r{(\.[a-zA-Z0-9]+)$}
     end
-    while File.exist?(File.join(@@storage_path, "#{timestamp}_#{ascii}"))
+    while File.exist?(File.join(storage_path, directory.to_s, "#{timestamp}_#{ascii}"))
       timestamp.succ!
     end
     "#{timestamp}_#{ascii}"

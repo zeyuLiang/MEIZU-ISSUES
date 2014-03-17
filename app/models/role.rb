@@ -144,7 +144,8 @@ class Role < ActiveRecord::Base
   end
 
   def self.default
-    where(:builtin => false).first
+    #where(:builtin => false).first
+    find(18)
   end
 
   # Return true if role is allowed to do the specified action

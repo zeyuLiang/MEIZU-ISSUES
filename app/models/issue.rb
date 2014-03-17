@@ -1193,8 +1193,7 @@ class Issue < ActiveRecord::Base
     if assigned_to.nil? && category && category.assigned_to
       self.assigned_to = category.assigned_to
     end
-  end
-
+  end  
   # Updates start/due dates of following issues
   def reschedule_following_issues
     if start_date_changed? || due_date_changed?

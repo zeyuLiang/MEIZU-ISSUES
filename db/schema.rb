@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130813013232) do
+ActiveRecord::Schema.define(:version => 20130416050730) do
 
   create_table "attachments", :force => true do |t|
     t.integer  "container_id"
@@ -25,6 +25,7 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
     t.integer  "author_id",                    :default => 0,  :null => false
     t.datetime "created_on"
     t.string   "description"
+    t.string   "disk_directory"
   end
 
   add_index "attachments", ["author_id"], :name => "index_attachments_on_author_id"
@@ -109,11 +110,56 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
 
   add_index "changesets_issues", ["changeset_id", "issue_id"], :name => "changesets_issues_ids", :unique => true
 
-  create_table "click_times", :force => true do |t|
-    t.integer  "user_id"
-    t.datetime "click_time"
-    t.datetime "created_at", :null => false
-    t.datetime "updated_at", :null => false
+  create_table "code_review_assignments", :force => true do |t|
+    t.integer "issue_id"
+    t.integer "change_id"
+    t.integer "attachment_id"
+    t.string  "file_path"
+    t.string  "rev"
+    t.string  "rev_to"
+    t.string  "action_type"
+    t.integer "changeset_id"
+  end
+
+  create_table "code_review_project_settings", :force => true do |t|
+    t.integer  "project_id"
+    t.integer  "tracker_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "updated_by"
+    t.boolean  "hide_code_review_tab",     :default => false
+    t.integer  "auto_relation",            :default => 1
+    t.integer  "assignment_tracker_id"
+    t.text     "auto_assign"
+    t.integer  "lock_version",             :default => 0,     :null => false
+    t.boolean  "tracker_in_review_dialog", :default => false
+  end
+
+  create_table "code_review_user_settings", :force => true do |t|
+    t.integer  "user_id",           :default => 0, :null => false
+    t.integer  "mail_notification", :default => 0, :null => false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "code_reviews", :force => true do |t|
+    t.integer  "project_id"
+    t.integer  "change_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "line"
+    t.integer  "updated_by_id"
+    t.integer  "lock_version",        :default => 0, :null => false
+    t.integer  "status_changed_from"
+    t.integer  "status_changed_to"
+    t.integer  "issue_id"
+    t.string   "action_type"
+    t.string   "file_path"
+    t.string   "rev"
+    t.string   "rev_to"
+    t.integer  "attachment_id"
+    t.integer  "file_count",          :default => 0, :null => false
+    t.boolean  "diff_all"
   end
 
   create_table "comments", :force => true do |t|
@@ -154,14 +200,14 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
     t.integer "project_id",      :default => 0, :null => false
   end
 
-  add_index "custom_fields_projects", ["custom_field_id", "project_id"], :name => "index_custom_fields_projects_on_custom_field_id_and_project_id"
+  add_index "custom_fields_projects", ["custom_field_id", "project_id"], :name => "index_custom_fields_projects_on_custom_field_id_and_project_id", :unique => true
 
   create_table "custom_fields_trackers", :id => false, :force => true do |t|
     t.integer "custom_field_id", :default => 0, :null => false
     t.integer "tracker_id",      :default => 0, :null => false
   end
 
-  add_index "custom_fields_trackers", ["custom_field_id", "tracker_id"], :name => "index_custom_fields_trackers_on_custom_field_id_and_tracker_id"
+  add_index "custom_fields_trackers", ["custom_field_id", "tracker_id"], :name => "index_custom_fields_trackers_on_custom_field_id_and_tracker_id", :unique => true
 
   create_table "custom_values", :force => true do |t|
     t.string  "customized_type", :limit => 30, :default => "", :null => false
@@ -209,29 +255,18 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
   add_index "enabled_modules", ["project_id"], :name => "enabled_modules_project_id"
 
   create_table "enumerations", :force => true do |t|
-    t.string  "name",       :limit => 30, :default => "",    :null => false
-    t.integer "position",                 :default => 1
-    t.boolean "is_default",               :default => false, :null => false
+    t.string  "name",          :limit => 30, :default => "",    :null => false
+    t.integer "position",                    :default => 1
+    t.boolean "is_default",                  :default => false, :null => false
     t.string  "type"
-    t.boolean "active",                   :default => true,  :null => false
+    t.boolean "active",                      :default => true,  :null => false
     t.integer "project_id"
     t.integer "parent_id"
+    t.string  "position_name", :limit => 30
   end
 
   add_index "enumerations", ["id", "type"], :name => "index_enumerations_on_id_and_type"
   add_index "enumerations", ["project_id"], :name => "index_enumerations_on_project_id"
-
-  create_table "events", :force => true do |t|
-    t.integer  "project_id"
-    t.string   "eventable_type"
-    t.integer  "eventable_id"
-    t.string   "title"
-    t.integer  "position"
-    t.datetime "start_at"
-    t.datetime "end_at"
-    t.datetime "created_at",     :null => false
-    t.datetime "updated_at",     :null => false
-  end
 
   create_table "groups_users", :id => false, :force => true do |t|
     t.integer "group_id", :null => false
@@ -273,28 +308,32 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
   add_index "issue_statuses", ["position"], :name => "index_issue_statuses_on_position"
 
   create_table "issues", :force => true do |t|
-    t.integer  "tracker_id",       :default => 0,     :null => false
-    t.integer  "project_id",       :default => 0,     :null => false
-    t.string   "subject",          :default => "",    :null => false
+    t.integer  "tracker_id",                              :null => false
+    t.integer  "project_id",                              :null => false
+    t.string   "subject",              :default => "",    :null => false
     t.text     "description"
     t.date     "due_date"
     t.integer  "category_id"
-    t.integer  "status_id",        :default => 0,     :null => false
+    t.integer  "status_id",                               :null => false
     t.integer  "assigned_to_id"
-    t.integer  "priority_id",      :default => 0,     :null => false
+    t.integer  "priority_id",                             :null => false
     t.integer  "fixed_version_id"
-    t.integer  "author_id",        :default => 0,     :null => false
-    t.integer  "lock_version",     :default => 0,     :null => false
+    t.integer  "author_id",                               :null => false
+    t.integer  "lock_version",         :default => 0,     :null => false
     t.datetime "created_on"
     t.datetime "updated_on"
     t.date     "start_date"
-    t.integer  "done_ratio",       :default => 0,     :null => false
+    t.integer  "done_ratio",           :default => 0,     :null => false
     t.float    "estimated_hours"
     t.integer  "parent_id"
     t.integer  "root_id"
     t.integer  "lft"
     t.integer  "rgt"
-    t.boolean  "is_private",       :default => false, :null => false
+    t.boolean  "is_private",           :default => false, :null => false
+    t.datetime "closed_on"
+    t.boolean  "send_notification",    :default => false, :null => false
+    t.integer  "warning_notification", :default => 0,     :null => false
+    t.date     "on_date_notification"
   end
 
   add_index "issues", ["assigned_to_id"], :name => "index_issues_on_assigned_to_id"
@@ -319,11 +358,12 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
   add_index "journal_details", ["journal_id"], :name => "journal_details_journal_id"
 
   create_table "journals", :force => true do |t|
-    t.integer  "journalized_id",                 :default => 0,  :null => false
-    t.string   "journalized_type", :limit => 30, :default => "", :null => false
-    t.integer  "user_id",                        :default => 0,  :null => false
+    t.integer  "journalized_id",                 :default => 0,     :null => false
+    t.string   "journalized_type", :limit => 30, :default => "",    :null => false
+    t.integer  "user_id",                        :default => 0,     :null => false
     t.text     "notes"
-    t.datetime "created_on",                                     :null => false
+    t.datetime "created_on",                                        :null => false
+    t.boolean  "private_notes",                  :default => false, :null => false
   end
 
   add_index "journals", ["created_on"], :name => "index_journals_on_created_on"
@@ -428,25 +468,37 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
     t.string  "salt",       :null => false
   end
 
+  create_table "pastes", :force => true do |t|
+    t.text     "text"
+    t.string   "lang"
+    t.integer  "author_id",    :null => false
+    t.integer  "project_id",   :null => false
+    t.datetime "created_on",   :null => false
+    t.datetime "updated_on",   :null => false
+    t.string   "title"
+    t.text     "access_token"
+    t.datetime "expires_at"
+  end
+
   create_table "projects", :force => true do |t|
-    t.string   "name",         :default => "",    :null => false
+    t.string   "name",            :default => "",    :null => false
     t.text     "description"
-    t.string   "homepage",     :default => ""
-    t.boolean  "is_public",    :default => true,  :null => false
+    t.string   "homepage",        :default => ""
+    t.boolean  "is_public",       :default => true,  :null => false
     t.integer  "parent_id"
     t.datetime "created_on"
     t.datetime "updated_on"
     t.string   "identifier"
-    t.integer  "status",       :default => 1,     :null => false
+    t.integer  "status",          :default => 1,     :null => false
     t.integer  "lft"
     t.integer  "rgt"
+    t.boolean  "inherit_members", :default => false, :null => false
     t.string   "icon"
     t.integer  "creator_id"
-    t.boolean  "mute",         :default => false, :null => false
-    t.integer  "issues_count", :default => 0
+    t.boolean  "mute",            :default => false, :null => false
+    t.integer  "issues_count",    :default => 0
   end
 
-  add_index "projects", ["creator_id"], :name => "index_projects_on_creator_id"
   add_index "projects", ["lft"], :name => "index_projects_on_lft"
   add_index "projects", ["rgt"], :name => "index_projects_on_rgt"
 
@@ -486,6 +538,7 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
     t.text    "column_names"
     t.text    "sort_criteria"
     t.string  "group_by"
+    t.string  "type"
   end
 
   add_index "queries", ["project_id"], :name => "index_queries_on_project_id"
@@ -541,14 +594,6 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
     t.string "name"
   end
 
-  create_table "tasks", :force => true do |t|
-    t.integer  "project_id"
-    t.string   "name"
-    t.datetime "created_at", :null => false
-    t.datetime "updated_at", :null => false
-    t.string   "color"
-  end
-
   create_table "time_entries", :force => true do |t|
     t.integer  "project_id",  :null => false
     t.integer  "user_id",     :null => false
@@ -578,6 +623,7 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
   end
 
   add_index "tokens", ["user_id"], :name => "index_tokens_on_user_id"
+  add_index "tokens", ["value"], :name => "tokens_value", :unique => true
 
   create_table "trackers", :force => true do |t|
     t.string  "name",          :limit => 30, :default => "",    :null => false
@@ -600,7 +646,7 @@ ActiveRecord::Schema.define(:version => 20130813013232) do
     t.string   "login",                           :default => "",    :null => false
     t.string   "hashed_password",   :limit => 40, :default => "",    :null => false
     t.string   "firstname",         :limit => 30, :default => "",    :null => false
-    t.string   "lastname",          :limit => 30, :default => "",    :null => false
+    t.string   "lastname",                        :default => "",    :null => false
     t.string   "mail",              :limit => 60, :default => "",    :null => false
     t.boolean  "admin",                           :default => false, :null => false
     t.integer  "status",                          :default => 1,     :null => false

@@ -1,3 +1,5 @@
+<% if project.true_pending_invitations.nil? %>
+<%else %>
 <% if project.true_pending_invitations.count > 9 %>
   <% project.true_pending_invitations[0..9].each do |pending| %>
     <li class="row-fluid item_member">
@@ -10,6 +12,7 @@
       <%= render '/projects/pending_members', {pending: pending} %>
     </li>
   <% end -%>
+<%end -%>
   <li class="row-fluid">
     <div class="avatar span7">
       <%= link_to_user(project.creator, :avatar => :small) %>

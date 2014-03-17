@@ -34,7 +34,8 @@ class Project < ActiveRecord::Base
   has_many :memberships, :class_name => 'Member'
   has_many :member_principals, :class_name => 'Member',
                                :include => :principal,
-                               :conditions => "#{Principal.table_name}.type='Group' OR (#{Principal.table_name}.type='User' AND #{Principal.table_name}.status=#{User::STATUS_ACTIVE})"
+                               #:conditions => "#{Principal.table_name}.type='Group' OR (#{Principal.table_name}.type='User' AND #{Principal.table_name}.status=#{User::STATUS_ACTIVE})"
+                               :conditions => " (#{Principal.table_name}.type='User' AND #{Principal.table_name}.status=#{User::STATUS_ACTIVE})"
   has_many :users, :through => :members
   has_many :watch_users, :through => :watched_members , :source => :user 
   belongs_to :creator, class_name: 'User'
@@ -86,6 +87,7 @@ class Project < ActiveRecord::Base
   validates_exclusion_of :identifier, :in => %w( new )
 
   before_validation :add_current_user_as_creator, on: :create
+  before_create :default_parent_id
   after_create :add_current_user_to_members
   after_save :update_position_under_parent, :if => Proc.new {|project| project.name_changed?}
   before_destroy :delete_all_members
@@ -159,7 +161,7 @@ class Project < ActiveRecord::Base
   #   Project.visible_condition(normal_user)  => "((projects.status = 1) AND (projects.is_public = 1 OR projects.id IN (1,3,4)))"
   #   Project.visible_condition(anonymous)    => "((projects.status = 1) AND (projects.is_public = 1))"
   def self.visible_condition(user, options={})
-    allowed_to_condition(user, :view_project, options)
+     allowed_to_condition(user, :view_project, options)
   end
 
   # Returns a SQL conditions string used to find all projects for which +user+ has the given +permission+
@@ -169,6 +171,7 @@ class Project < ActiveRecord::Base
   # * :with_subprojects => limit the condition to project and its subprojects
   # * :member => limit the condition to the user projects
   def self.allowed_to_condition(user, permission, options={})
+	options = { :member => true }
     perm = Redmine::AccessControl.permission(permission)
     base_statement = (perm && perm.read? ? "#{Project.table_name}.status <> #{Project::STATUS_ARCHIVED}" : "#{Project.table_name}.status = #{Project::STATUS_ACTIVE}")
     if perm && perm.project_module
@@ -578,6 +581,7 @@ class Project < ActiveRecord::Base
       # No write action allowed on closed projects
       return false
     end
+
     # No action allowed on disabled modules
     if action.is_a? Hash
       allowed_actions.include? "#{action[:controller]}/#{action[:action]}"
@@ -722,6 +726,7 @@ class Project < ActiveRecord::Base
   def self.project_tree(projects, &block)
     ancestors = []
     projects.sort_by(&:lft).each do |project|
+
       while (ancestors.any? && !project.is_descendant_of?(ancestors.last))
         ancestors.pop
       end
@@ -731,7 +736,9 @@ class Project < ActiveRecord::Base
   end
 
   def true_pending_invitations
+    
     pendings = MemberInvitation.where(project_id: self.id, state: 'pending').order('id desc').uniq_by{|m|m.mail}
+    return pendings
     member_users = Member.where(project_id: self.id).includes(:user).map{|m|m.user}
     member_users << self.creator
     member_user_ids = member_users.map{|u|u.id}
@@ -999,4 +1006,8 @@ class Project < ActiveRecord::Base
     self.creator = User.current
   end
   
+  # Set default parent_id to the parent project in redmine
+  def default_parent_id
+    self.parent_id=243
+  end
 end

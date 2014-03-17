@@ -29,9 +29,9 @@ class AccountController < ApplicationController
     else
       authenticate_user
     end
-  rescue AuthSourceException => e
-    logger.error "An error occured when authenticating #{params[:username]}: #{e.message}"
-    render_error :message => e.message
+#  rescue AuthSourceException => e
+#    logger.error "An error occured when authenticating #{params[:username]}: #{e.message}"
+ #   render_error :message => e.message
   end
 
   # Log out current user and redirect to welcome page
@@ -148,11 +148,11 @@ class AccountController < ApplicationController
   private
 
   def authenticate_user
-    if Setting.openid? && using_open_id?
-      open_id_authenticate(params[:openid_url])
-    else
+   # if Setting.openid? && using_open_id?
+    #  open_id_authenticate(params[:openid_url])
+   # else
       password_authentication
-    end
+   # end
   end
 
   def password_authentication

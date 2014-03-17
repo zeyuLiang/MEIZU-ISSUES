@@ -155,7 +155,7 @@ class ApplicationController < ActionController::Base
   def check_if_login_required
     # no check needed if user is already logged in
     return true if User.current.logged?
-    require_login if Setting.login_required?
+    require_login  #if Setting.login_required?
   end
 
   def set_localization

@@ -26,5 +26,5 @@ test:
   database: redmine_test
   host: localhost
   username: root
-  password:
+  password: 8881678
   encoding: utf8

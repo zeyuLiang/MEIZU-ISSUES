@@ -137,9 +137,9 @@ class User < Principal
   # Returns the user that matches provided login and password, or nil
   def self.try_to_login(login, password)
     if login.include?("@")
-      login = login.to_s
-    else
-      login = login.to_s + "@" + Setting.login_domain
+      login = login.split("@").first
+    #else
+    #  login = login.to_s + "@" + Setting.login_domain
     end
     password = password.to_s
 
@@ -484,9 +484,14 @@ class User < Principal
   #   or falls back to Non Member / Anonymous permissions depending if the user is logged
   def allowed_to?(action, context, options={}, &block)
     if context && context.is_a?(Project)
-      return false unless context.allows_to?(action)
+
       # Admin users are authorized for anything else
       return true if admin?
+
+      return false unless context.allows_to?(action) || action == :manage_member_invitations
+      
+      
+      
       roles = roles_for_project(context)
       return false unless roles
       roles.detect {|role|
@@ -494,6 +499,7 @@ class User < Principal
         role.allowed_to?(action) &&
         (block_given? ? yield(role, self) : true)
       }
+
     elsif context && context.is_a?(Array)
       # Authorize if user is authorized on every element of the array
       context.map do |project|
