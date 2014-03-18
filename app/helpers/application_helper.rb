@@ -554,10 +554,15 @@ module ApplicationHelper
     return '' if text.blank?
     project = options[:project] || @project || (obj && obj.respond_to?(:project) ? obj.project : nil)
     only_path = options.delete(:only_path) == false ? false : true
+    if text =~ /\<.+\>/  
+      text_formatting=options[:text_formatting]||"CKEditor"
+    else
+      text_formatting=options[:text_formatting]||"textile"
+    end
 
     text = text.dup
     macros = catch_macros(text)
-    text = Redmine::WikiFormatting.to_html(Setting.text_formatting, text, :object => obj, :attribute => attr)
+    text = Redmine::WikiFormatting.to_html(text_formatting, text, :object => obj, :attribute => attr)
 
     @parsed_headings = []
     @heading_anchors = {}
