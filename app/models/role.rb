@@ -1,3 +1,5 @@
+#encoding: utf-8
+
 # Redmine - project management software
 # Copyright (C) 2006-2012  Jean-Philippe Lang
 #
@@ -145,7 +147,7 @@ class Role < ActiveRecord::Base
 
   def self.default
     #where(:builtin => false).first
-    find(18)
+    find_by_name("成员")
   end
 
   # Return true if role is allowed to do the specified action

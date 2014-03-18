@@ -1,4 +1,4 @@
-set :repository, "git://github.com/khonsou/MEIZU-ISSUES.git"
+set :repository, "git://github.com/zeyuLiang/MEIZU-ISSUES.git"
 set :domain, "172.16.201.15"
 set :application_servers, %w(172.16.201.15)
 set :migration_server, "172.16.201.15"
