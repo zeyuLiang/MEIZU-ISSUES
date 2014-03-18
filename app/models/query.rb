@@ -150,6 +150,8 @@ class Query < ActiveRecord::Base
   ]
   cattr_reader :available_columns
 
+
+
   scope :visible, lambda {|*args|
     user = args.shift || User.current
     base = Project.allowed_to_condition(user, :view_issues, *args)

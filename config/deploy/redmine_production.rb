@@ -15,4 +15,4 @@ task :assets_precompile, :roles => [:app] do
   run "cd #{release_path}; RAILS_ENV=#{rails_env} bundle exec rake assets:precompile 2>/dev/null"
 end
 
-after "deploy:update_code", :assets_precompile
+#after "deploy:update_code", :assets_precompile
