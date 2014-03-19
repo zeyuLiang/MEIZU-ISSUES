@@ -22,6 +22,12 @@ class MemberInvitationsController < ApplicationController
     mails = params[:recipients].split(',').map { |m| User.parse_mail(m) }.compact.uniq
     member_invitations = MemberInvitation.invite(@project, mails, params[:description])
     @project = Project.find(@project.id)
+
+    member_invitations.map do |m| 
+      m.accept!(m.token)
+      Member.where(:user_id => m.user_id).order("created_on desc").first.move_to_top
+    end  
+  
   end
 
   def show

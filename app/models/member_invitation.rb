@@ -33,7 +33,7 @@ class MemberInvitation < ActiveRecord::Base
   def accept!(token)
     return false if state != 'pending' || token != self.token
     if self.update_attributes(state: 'accepted')
-      self.project.members << Member.new(:role_ids => [Role.default.id], :user => User.current)
+      self.project.members << Member.create(:role_ids => [Role.default.id], :user => self.user)
       true
     end
   end
