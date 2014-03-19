@@ -27,6 +27,9 @@ class Project < ActiveRecord::Base
   # Maximum length for project identifiers
   IDENTIFIER_MAX_LENGTH = 100
 
+  # Default parent project identidifier
+  DEFAULT_PARENT_PROJECT_IDENTIFIER = 'ktxtqsfxm'
+
   # Specific overidden Activities
   has_many :time_entry_activities
   has_many :members, :include => [:user, :roles], :conditions => "#{User.table_name}.type='User' AND #{User.table_name}.status=#{User::STATUS_ACTIVE}"
@@ -87,7 +90,7 @@ class Project < ActiveRecord::Base
   validates_exclusion_of :identifier, :in => %w( new )
 
   before_validation :add_current_user_as_creator, on: :create
-  before_create :default_parent_id
+  before_save :set_default_parent
   after_create :add_current_user_to_members
   after_save :update_position_under_parent, :if => Proc.new {|project| project.name_changed?}
   before_destroy :delete_all_members
@@ -1007,7 +1010,10 @@ class Project < ActiveRecord::Base
   end
   
   # Set default parent_id to the parent project in redmine
-  def default_parent_id
-    self.parent_id=243
+  def set_default_parent
+    return true if self.identifier == DEFAULT_PARENT_PROJECT_IDENTIFIER
+    self.parent = Project.find_by_identifier(DEFAULT_PARENT_PROJECT_IDENTIFIER) ||
+                  Project.create(:name => "Meizu Issues Default Parent Project",
+                                 :identifier => DEFAULT_PARENT_PROJECT_IDENTIFIER)                    
   end
 end

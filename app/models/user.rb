@@ -510,7 +510,8 @@ class User < Principal
     elsif options[:global]
       # Admin users are always authorized
       return true if admin?
-
+      # the following line is a hacking to get around the add_project privilege 
+      return true if self.logged? and (action == :add_project || action.is_a?(Hash) && action[:controller] == 'projects')
       # authorize if user has at least one role that has this permission
       roles = memberships.collect {|m| m.roles}.flatten.uniq
       roles << (self.logged? ? Role.non_member : Role.anonymous)    
