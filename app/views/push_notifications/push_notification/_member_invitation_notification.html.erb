@@ -10,7 +10,7 @@
     <div class="span14">
       <% case push_notification.event_name %>
       <% when 'create' %>
-        邀请你加入 <%= link_to push_notification.project.name, read_push_notification_path(push_notification, pusher_path: member_invitation_path(push_notification.pusher)) %>
+        邀请你加入 <%= link_to push_notification.project.name, read_push_notification_path(push_notification, pusher_path: project_path(push_notification.project)) %>
       <% end -%>
       <span class="project">(<%= link_to_project push_notification.project %>)</span>
     </div>
@@ -22,7 +22,7 @@
   </li>
 <% else %>
   <li class="item row-fluid">
-    <%= link_to read_push_notification_path(push_notification, pusher_path: member_invitation_path(push_notification.pusher)) do %>
+    <%= link_to read_push_notification_path(push_notification, pusher_path: project_path(push_notification.project)) do %>
       <div class="span7">
         <div class="user-image pull-left">
           <%= image_tag push_notification.author.avatar_url(:small), :class => "img-rounded" %>          
