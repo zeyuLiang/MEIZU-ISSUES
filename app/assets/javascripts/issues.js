@@ -126,7 +126,7 @@ function initAt(){
     limit: 5,
     tpl: "<li  data-value='#${id}'> ${id} ${subject} </li>"  ,   
     callbacks: {      
-      remote_filter: function(query, callback) {
+      remote_filter: function(query, callback) { 
         $.getJSON("/projects/" + window._project_id + "/issues.json", {q: query}, function(data) {
           callback(data.issues)
         });

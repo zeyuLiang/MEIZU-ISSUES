@@ -58,7 +58,7 @@ class IssuesController < ApplicationController
 
   def index
     if params[:q].present?
-      @issues = @issues.open.where(" subject LIKE ?", "%#{params[:q]}%").order('issues.created_on DESC').limit(5)      
+      @issues = @issues.open.where("subject LIKE ?", "%#{params[:q]}%").order('issues.created_on DESC').limit(5)      
     else  
       @issues = @issues.open
       process_issues

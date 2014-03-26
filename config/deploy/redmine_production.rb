@@ -1,7 +1,7 @@
 set :repository, "git://github.com/zeyuLiang/MEIZU-ISSUES.git"
-set :domain, "172.16.201.15"
-set :application_servers, %w(172.16.201.15)
-set :migration_server, "172.16.201.15"
+set :domain, "new_issues"
+set :application_servers, %w(new_issues)
+set :migration_server, "new_issues"
 set :user, "rails"
 set :rails_env, "production"
 set :branch, "redmine_production"

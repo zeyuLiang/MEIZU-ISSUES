@@ -36,7 +36,7 @@
     <%= labelled_fields_for :issue, @issue do |f| %>
     <%= call_hook(:view_issues_form_details_top, { :issue => @issue, :form => f }) %>
 
-    <!--<%= f.hidden_field :tracker_id, value: @issue.project.trackers.first.id %>-->
+    <%= f.hidden_field :tracker_id, value: @issue.project.trackers.where(:name=>"课题").first.id %>
 
 
     <%= call_hook(:view_issues_form_details_bottom, { :issue => @issue, :form => f }) %>

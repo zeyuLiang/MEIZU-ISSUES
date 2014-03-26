@@ -10,7 +10,7 @@
         <span class="icon-bar"></span>
       </button>
       
-      <div class="nav-collapse collapse">      
+      <div class="nav-collapse nav-collapsepse">      
         <% if User.current.logged? %>
           <ul class="nav">
             <li class="active">
@@ -36,6 +36,11 @@
                   <%= link_to l(:label_logout), signout_path %>
                 </li>
               </ul>
+            </li>
+            <li class="active">
+              <a href=<%="http://redmine.meizu.com#{request.fullpath}"%>>
+                <i class="icon-redirect"></i>切换到redmine
+              </a>
             </li>
           </ul>
 
